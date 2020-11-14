@@ -3,9 +3,9 @@ name: Check
 on:
   pull_request:
     types: [opened, synchronize]
-    push:
-      branches:
-        - main
+  push:
+    branches:
+      - main
 
 jobs:
   check:
