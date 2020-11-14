@@ -12,8 +12,5 @@ export default defineComponent({
   components: {
     HelloWorld,
   },
-  mounted() {
-    const a: number = "test";
-  },
 });
 </script>
