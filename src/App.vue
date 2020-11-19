@@ -1,10 +1,11 @@
 <template>
   <img alt="Vue logo" src="./assets/logo.png" />
   <HelloWorld msg="Hello Vue 3.0 + Vite" />
+  {{ count }}
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, ref } from 'vue'
 import WebMidi from 'webmidi'
 import HelloWorld from './components/HelloWorld.vue'
 
@@ -13,7 +14,8 @@ export default defineComponent({
   components: {
     HelloWorld,
   },
-  mounted() {
+  setup() {
+    const count = ref(0)
     let blinkFlag = true
     const firstBlinkButtons = [48, 50, 53, 55]
     const secondBlinkButtons = [49, 51, 52, 54]
@@ -37,6 +39,10 @@ export default defineComponent({
         inputFromPhysical.addListener(eventName, 'all', (event) => {
           const data = Array.from(event.data)
           console.log(eventName, data)
+
+          if (data[0] === 176) {
+            count.value += data[2] === 65 ? 1 : -1
+          }
         })
       })
 
@@ -61,6 +67,8 @@ export default defineComponent({
 
       setInterval(blink, 250)
     })
+
+    return { count }
   },
 })
 </script>
