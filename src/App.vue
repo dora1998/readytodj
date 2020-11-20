@@ -16,9 +16,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
-import WebMidi from 'webmidi'
+import { defineComponent, watch } from 'vue'
 import HelloWorld from './components/HelloWorld.vue'
+import { useSpotifyWebPlaybackSdk } from './hooks/useSpotifyWebPlaybackSdk'
+
+const OAUTH_TOKEN = import.meta.env.VITE_OAUTH_TOKEN ?? ''
 
 export default defineComponent({
   name: 'App',
@@ -26,60 +28,29 @@ export default defineComponent({
     HelloWorld,
   },
   setup() {
-    const count = ref(0)
-    let blinkFlag = true
-    const firstBlinkButtons = [48, 50, 53, 55]
-    const secondBlinkButtons = [49, 51, 52, 54]
-    const midiEventNames = ['noteoff', 'noteon', 'controlchange'] as const
-
-    WebMidi.enable((err) => {
-      if (err) {
-        console.error(err)
-        return
-      }
-
-      console.log(WebMidi.outputs)
-      const inputFromPhysical = WebMidi.getInputByName('DDJ-400')
-      const outputToPhysical = WebMidi.getOutputByName('DDJ-400')
-      if (!(inputFromPhysical && outputToPhysical)) {
-        console.error('failed to get output!')
-        return
-      }
-
-      midiEventNames.forEach((eventName) => {
-        inputFromPhysical.addListener(eventName, 'all', (event) => {
-          const data = Array.from(event.data)
-          console.log(eventName, data)
-
-          if (data[0] === 176) {
-            count.value += data[2] === 65 ? 1 : -1
+    const { player, deviceId, isReady } = useSpotifyWebPlaybackSdk({
+      name: 'ReadyToDJ',
+      getOAuthToken: async () => OAUTH_TOKEN,
+      onReady: () => {
+        fetch(
+          `https://api.spotify.com/v1/me/player/play?device_id=${deviceId.value}`,
+          {
+            method: 'PUT',
+            body: JSON.stringify({
+              uris: ['spotify:track:1CFuvvD7OzO65MldvBdHEk'],
+            }),
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${OAUTH_TOKEN}`,
+            },
           }
-        })
-      })
-
-      const blink = () => {
-        if (blinkFlag) {
-          firstBlinkButtons.forEach((button) =>
-            outputToPhysical.send(151, [button, 127])
-          )
-          secondBlinkButtons.forEach((button) =>
-            outputToPhysical.send(151, [button, 0])
-          )
-        } else {
-          firstBlinkButtons.forEach((button) =>
-            outputToPhysical.send(151, [button, 0])
-          )
-          secondBlinkButtons.forEach((button) =>
-            outputToPhysical.send(151, [button, 127])
-          )
-        }
-        blinkFlag = !blinkFlag
-      }
-
-      setInterval(blink, 250)
+        )
+      },
+      onPlayerStateChanged: (state) =>
+        console.log('onPlayerStateChanged', state),
+      accountError: () => console.error('accountError!'),
     })
-
-    return { count }
+    watch(isReady, (newValue) => console.log('isReady', newValue))
   },
 })
 </script>
