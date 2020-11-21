@@ -82,10 +82,8 @@ export default defineComponent({
       if (newIndex < 0 || newIndex > toRefs(props).tracks.value.length - 1)
         return
       selectedIdx.value = newIndex
-      console.log(newIndex)
     }
     const handlePlayByDjCon = () => {
-      console.log(selectedIdx.value, props.deviceId)
       if (!(selectedIdx.value !== null && toRefs(props).deviceId?.value)) return
       spotifyApi.play({
         uris: [toRefs(props).tracks.value[selectedIdx.value].uri],

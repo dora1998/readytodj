@@ -1,18 +1,28 @@
 <template>
   <div class="flex flex-row p-4 space-x-4">
     <div class="max-w-lg w-2/3 flex-shrink-0">
-      <player :state="playbackState" :deviceId="deviceId" />
-      <shortcut-list class="mt-4" />
+      <player :state="playbackState" :device-id="deviceId" />
+      <shortcut-list
+        class="mt-4"
+        :shortcuts="shortcuts"
+        :on-add="handleAddShortcut"
+        :on-remove="handleRemoveShortcut"
+        :on-call="handleCallShortcut"
+      />
     </div>
     <div class="flex-1">
-      <search-input :onSearch="handleSearch" />
-      <track-list class="mt-4" :tracks="searchResult" :deviceId="deviceId" />
+      <search-input
+        :value="searchQuery"
+        :on-search="handleSearch"
+        @input="handleSearchInput"
+      />
+      <track-list class="mt-4" :tracks="searchResult" :device-id="deviceId" />
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, provide, inject } from 'vue'
+import { defineComponent, ref } from 'vue'
 import SpotifyWebApi from 'spotify-web-api-js'
 import { useSpotifyWebPlaybackSdk } from '../hooks/useSpotifyWebPlaybackSdk'
 import { OAUTH_TOKEN } from '../utils/env'
@@ -33,7 +43,19 @@ export default defineComponent({
   },
   setup() {
     const playbackState = ref<Spotify.PlaybackState>()
+    const searchQuery = ref('')
     const searchResult = ref<SpotifyApi.TrackObjectFull[]>([])
+    const shortcuts = ref<(string | undefined)[]>([
+      '早見沙織',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    ])
+
     const { player, deviceId, isReady } = useSpotifyWebPlaybackSdk({
       name: 'ReadyToDJ',
       getOAuthToken: async () => OAUTH_TOKEN,
@@ -49,11 +71,44 @@ export default defineComponent({
       },
       accountError: () => console.error('accountError!'),
     })
+
     const handleSearch = async (text: string) => {
       const res = await spotifyApi.searchTracks(text)
       searchResult.value = res.tracks.items
     }
-    return { playbackState, searchResult, deviceId, handleSearch }
+    const handleSearchInput = (text: string) => (searchQuery.value = text)
+
+    const handleRemoveShortcut = (idx: number) => {
+      const newArr = [...shortcuts.value]
+      newArr[idx] = undefined
+      console.log('remove', newArr)
+      shortcuts.value = newArr
+    }
+    const handleAddShortcut = (idx: number) => {
+      const newArr = [...shortcuts.value]
+      newArr[idx] = searchQuery.value
+      console.log('add', newArr)
+      shortcuts.value = newArr
+    }
+    const handleCallShortcut = (idx: number) => {
+      if (!shortcuts.value[idx]) return
+      const newText = shortcuts.value[idx] ?? ''
+      searchQuery.value = newText
+      handleSearch(newText)
+    }
+
+    return {
+      playbackState,
+      searchResult,
+      shortcuts,
+      deviceId,
+      searchQuery,
+      handleSearch,
+      handleSearchInput,
+      handleRemoveShortcut,
+      handleAddShortcut,
+      handleCallShortcut,
+    }
   },
 })
 </script>

@@ -69,7 +69,6 @@ import {
   watch,
   toRefs,
   computed,
-  inject,
 } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faHeart, faStepForward } from '@fortawesome/free-solid-svg-icons'
@@ -79,7 +78,7 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import SpotifyApi from 'spotify-web-api-js'
 import WebMidi from 'webmidi'
-import { OAUTH_TOKEN } from '../utils/env'
+import { spotifyApi } from '../utils/env'
 import SpotifyWebApi from 'spotify-web-api-js'
 
 function formatWithZeroPadding(num: number, len: number): string {
@@ -176,8 +175,6 @@ export default defineComponent({
       return imgs[0]?.url ?? ''
     })
 
-    const spotifyApi = new SpotifyWebApi()
-    spotifyApi.setAccessToken(OAUTH_TOKEN)
     const handlePlayButton = () => {
       const paused = toRefs(props).state.value?.paused
       if (paused) {
