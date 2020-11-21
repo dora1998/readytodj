@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-row p-4">
     <div class="max-w-lg w-2/3 flex-shrink-0">
-      <player />
+      <player :state="playbackState" :deviceId="deviceId" />
       <shortcut-list class="mt-4" />
     </div>
     <div class="flex-1">曲リスト</div>
@@ -9,7 +9,10 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, ref, provide, inject } from 'vue'
+import SpotifyWebApi from 'spotify-web-api-js'
+import { useSpotifyWebPlaybackSdk } from '../hooks/useSpotifyWebPlaybackSdk'
+import { OAUTH_TOKEN } from '../utils/env'
 import Player from '../components/Player.vue'
 import ShortcutList from '../components/ShortcutList.vue'
 
@@ -17,6 +20,27 @@ export default defineComponent({
   components: {
     Player,
     ShortcutList,
+  },
+  setup() {
+    const playbackState = ref<Spotify.PlaybackState>()
+    const { player, deviceId, isReady } = useSpotifyWebPlaybackSdk({
+      name: 'ReadyToDJ',
+      getOAuthToken: async () => OAUTH_TOKEN,
+      onPlayerStateChanged: (state) => {
+        playbackState.value = state
+        console.log(state)
+      },
+      onReady: (deviceId) => {
+        const spotifyApi = new SpotifyWebApi()
+        spotifyApi.setAccessToken(OAUTH_TOKEN)
+        spotifyApi.play({
+          device_id: deviceId,
+          uris: ['spotify:track:2Wgy7nY7GPUIEyP8nDyFeI'],
+        })
+      },
+      accountError: () => console.error('accountError!'),
+    })
+    return { playbackState, deviceId }
   },
 })
 </script>
