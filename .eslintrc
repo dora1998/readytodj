@@ -16,9 +16,11 @@
   "parserOptions": {
     "parser": "@typescript-eslint/parser",
     "sourceType": "module",
-    "project": ["./tsconfig.json"]
+    "project": ["./tsconfig.json"],
+    "extraFileExtensions": [".vue"]
   },
   "rules": {
-    "@typescript-eslint/explicit-module-boundary-types": "off"
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "no-undef": "off"
   }
 }

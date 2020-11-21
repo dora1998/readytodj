@@ -154,6 +154,7 @@ export default defineComponent({
   props: {
     deviceId: {
       type: String,
+      default: '',
     },
     state: {
       type: Object as PropType<Spotify.PlaybackState | undefined>,

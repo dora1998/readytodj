@@ -1,10 +1,10 @@
 <template>
   <div class="text-white">
     <button
-      class="flex flex-row items-center text-left w-full space-x-2 hover:bg-gray-700"
       v-for="(t, idx) in tracks"
-      :class="idx === selectedIdx && 'bg-gray-500'"
       :key="t.id"
+      class="flex flex-row items-center text-left w-full space-x-2 hover:bg-gray-700"
+      :class="idx === selectedIdx && 'bg-gray-600'"
     >
       <img
         :src="t.album.images[0].url"
@@ -14,7 +14,7 @@
       />
       <div>
         <div v-text="t.name" />
-        <div class="text-gray-300 text-sm" v-text="t.artists[0].name" />
+        <div class="text-gray-400 text-sm" v-text="t.artists[0].name" />
       </div>
     </button>
   </div>
@@ -24,7 +24,7 @@
 import { defineComponent, PropType, ref, watch, toRefs } from 'vue'
 import SpotifyWebApi from 'spotify-web-api-js'
 import WebMidi from 'webmidi'
-import { OAUTH_TOKEN, spotifyApi } from '../utils/env'
+import { spotifyApi } from '../utils/env'
 
 export const useDjController = (
   spotifyApi: SpotifyWebApi.SpotifyWebApiJs,
@@ -32,19 +32,13 @@ export const useDjController = (
   handlePlay: () => void
 ) => {
   const prePosition = ref(-1)
-  const timer = ref()
 
   WebMidi.enable((err) => {
-    if (err) {
-      console.error(err)
-      return
-    }
+    if (err) return
 
-    console.log(WebMidi.outputs)
     const inputFromPhysical = WebMidi.getInputByName('DDJ-400')
     const outputToPhysical = WebMidi.getOutputByName('DDJ-400')
     if (!(inputFromPhysical && outputToPhysical)) {
-      console.error('failed to get output!')
       return
     }
 
@@ -75,6 +69,7 @@ export default defineComponent({
     },
     deviceId: {
       type: String,
+      default: '',
     },
   },
   setup(props) {
@@ -89,7 +84,7 @@ export default defineComponent({
       selectedIdx.value = newIndex
       console.log(newIndex)
     }
-    const handlePlay = () => {
+    const handlePlayByDjCon = () => {
       console.log(selectedIdx.value, props.deviceId)
       if (!(selectedIdx.value !== null && toRefs(props).deviceId?.value)) return
       spotifyApi.play({
@@ -97,9 +92,16 @@ export default defineComponent({
         device_id: toRefs(props).deviceId?.value,
       })
     }
-    useDjController(spotifyApi, handleMoveSelector, handlePlay)
+    useDjController(spotifyApi, handleMoveSelector, handlePlayByDjCon)
 
-    return { selectedIdx }
+    const handlePlayByClick = (uri: string) => {
+      spotifyApi.play({
+        uris: [uri],
+        device_id: toRefs(props).deviceId?.value,
+      })
+    }
+
+    return { selectedIdx, handlePlayByClick }
   },
 })
 </script>
