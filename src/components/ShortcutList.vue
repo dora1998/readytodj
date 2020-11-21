@@ -26,31 +26,43 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, toRefs, watch } from 'vue'
+import { defineComponent, PropType, toRefs, watch, ref } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { faTrashAlt } from '@fortawesome/free-regular-svg-icons'
 import WebMidi from 'webmidi'
 
 export const useDjController = (handleClick: (idx: number) => void) => {
-  const inputFromPhysical = WebMidi.getInputByName('DDJ-400')
-  const outputToPhysical = WebMidi.getOutputByName('DDJ-400')
-  if (!(inputFromPhysical && outputToPhysical)) {
+  const updateAvaliableLamp = ref<(shortcuts: (string | undefined)[]) => void>(
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    return { updateAvaliableLamp: () => {} }
-  }
+    () => {}
+  )
+  WebMidi.enable((err) => {
+    if (err) {
+      console.error(err)
+      return
+    }
 
-  inputFromPhysical.addListener('noteon', 'all', (event) => {
-    const data = Array.from(event.data)
-    // 左側のHOT CUEモードでの下8つボタンの押し込み
-    if (data[0] === 151) {
-      handleClick(data[1])
+    const inputFromPhysical = WebMidi.getInputByName('DDJ-400')
+    const outputToPhysical = WebMidi.getOutputByName('DDJ-400')
+
+    if (!(inputFromPhysical && outputToPhysical)) {
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      return { updateAvaliableLamp: () => {} }
+    }
+
+    inputFromPhysical.addListener('noteon', 'all', (event) => {
+      const data = Array.from(event.data)
+      // 左側のHOT CUEモードでの下8つボタンの押し込み
+      if (data[0] === 151) {
+        handleClick(data[1])
+      }
+    })
+
+    updateAvaliableLamp.value = (shortcuts: (string | undefined)[]) => {
+      shortcuts.forEach((s, i) => outputToPhysical.send(151, [i, s ? 127 : 0]))
     }
   })
-
-  const updateAvaliableLamp = (shortcuts: (string | undefined)[]) => {
-    shortcuts.forEach((s, i) => outputToPhysical.send(151, [i, s ? 127 : 0]))
-  }
   return { updateAvaliableLamp }
 }
 
@@ -86,7 +98,15 @@ export default defineComponent({
       }
     }
     const { updateAvaliableLamp } = useDjController(handleClick)
-    watch(toRefs(props).shortcuts, updateAvaliableLamp, { immediate: true })
+    watch(
+      toRefs(props).shortcuts,
+      (newArr) => {
+        updateAvaliableLamp.value(newArr)
+      },
+      {
+        immediate: true,
+      }
+    )
     return { handleClick, faTrashAlt, faPlus }
   },
 })

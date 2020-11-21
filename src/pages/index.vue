@@ -22,7 +22,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
+import { defineComponent, ref, watch } from 'vue'
 import SpotifyWebApi from 'spotify-web-api-js'
 import { useSpotifyWebPlaybackSdk } from '../hooks/useSpotifyWebPlaybackSdk'
 import { OAUTH_TOKEN } from '../utils/env'
@@ -33,6 +33,21 @@ import TrackList from '../components/TrackList.vue'
 
 const spotifyApi = new SpotifyWebApi()
 spotifyApi.setAccessToken(OAUTH_TOKEN)
+
+const LOCAL_STORAGE_KEYS = {
+  shortcuts: 'shortcuts',
+} as const
+const SPLIT_STR = '<>'
+const INITIAL_SHORTCUTS = [
+  '早見沙織',
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+] as const
 
 export default defineComponent({
   components: {
@@ -45,16 +60,11 @@ export default defineComponent({
     const playbackState = ref<Spotify.PlaybackState>()
     const searchQuery = ref('')
     const searchResult = ref<SpotifyApi.TrackObjectFull[]>([])
-    const shortcuts = ref<(string | undefined)[]>([
-      '早見沙織',
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-    ])
+    const shortcuts = ref<(string | undefined)[]>(
+      localStorage.getItem('shortcuts')
+        ? localStorage.getItem(LOCAL_STORAGE_KEYS.shortcuts)!.split(SPLIT_STR)
+        : [...INITIAL_SHORTCUTS]
+    )
 
     const { player, deviceId, isReady } = useSpotifyWebPlaybackSdk({
       name: 'ReadyToDJ',
@@ -96,6 +106,9 @@ export default defineComponent({
       searchQuery.value = newText
       handleSearch(newText)
     }
+    watch(shortcuts, (newArr) =>
+      localStorage.setItem(LOCAL_STORAGE_KEYS.shortcuts, newArr.join(SPLIT_STR))
+    )
 
     return {
       playbackState,
