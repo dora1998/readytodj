@@ -19,12 +19,13 @@
       <div class="space-y-2">
         <div class="bg-black rounded-full overflow-hidden">
           <div
-            class="bg-green-400 h-2"
+            class="h-2"
+            :class="isSeeking ? 'bg-orange-400' : 'bg-green-400'"
             :style="`width: ${
-              ((realtimePosition ?? 0) / (state?.duration ?? 1)) * 100
+              ((progressPosition ?? 0) / (state?.duration ?? 1)) * 100
             }%`"
             role="progressbar"
-            :aria-valuenow="realtimePosition ?? 0"
+            :aria-valuenow="progressPosition ?? 0"
             aria-valuemin="0"
             :aria-valuemax="state?.duration ?? 1"
           ></div>
@@ -77,6 +78,7 @@ import {
   faPauseCircle,
 } from '@fortawesome/free-regular-svg-icons'
 import SpotifyApi from 'spotify-web-api-js'
+import WebMidi from 'webmidi'
 import { OAUTH_TOKEN } from '../utils/env'
 import SpotifyWebApi from 'spotify-web-api-js'
 
@@ -88,6 +90,61 @@ function formatTimeStr(ms: number): string {
     Math.floor(ms / 1000) % 60,
     2
   )}`
+}
+
+export const useDjController = (
+  spotifyApi: SpotifyApi.SpotifyWebApiJs,
+  realtimePosition: Ref<number>,
+  handlePlayButton: () => void
+) => {
+  const prePosition = ref(-1)
+  const timer = ref()
+
+  WebMidi.enable((err) => {
+    if (err) {
+      console.error(err)
+      return
+    }
+
+    console.log(WebMidi.outputs)
+    const inputFromPhysical = WebMidi.getInputByName('DDJ-400')
+    const outputToPhysical = WebMidi.getOutputByName('DDJ-400')
+    if (!(inputFromPhysical && outputToPhysical)) {
+      console.error('failed to get output!')
+      return
+    }
+
+    const midiEventNames = ['noteoff', 'noteon', 'controlchange'] as const
+    midiEventNames.forEach((eventName) => {
+      inputFromPhysical.addListener(eventName, 'all', (event) => {
+        const data = Array.from(event.data)
+        console.log(eventName, data)
+      })
+    })
+
+    inputFromPhysical.addListener('noteon', 'all', (event) => {
+      const data = Array.from(event.data)
+      if (data[0] === 144 && data[1] === 11) {
+        handlePlayButton()
+      }
+    })
+    inputFromPhysical.addListener('controlchange', 'all', (event) => {
+      const data = Array.from(event.data)
+
+      if (data[0] === 176) {
+        if (prePosition.value === -1) prePosition.value = realtimePosition.value
+        prePosition.value += data[2] === 65 ? 100 : -100
+
+        if (timer.value !== -1) clearTimeout(timer.value)
+        timer.value = setTimeout(() => {
+          spotifyApi.seek(prePosition.value)
+          prePosition.value = -1
+        }, 1000)
+      }
+    })
+  })
+
+  return { prePosition }
 }
 
 export default defineComponent({
@@ -112,20 +169,15 @@ export default defineComponent({
       const timer = setInterval(() => (realtimePosition.value += 1000), 1000)
       onInvalidate(() => clearInterval(timer))
     })
-    const positionStr = computed(() => formatTimeStr(realtimePosition.value))
-    const durationStr = computed(() =>
-      formatTimeStr(props.state?.duration ?? 0)
-    )
     const albumImg = computed(() => {
       const imgs = props.state?.track_window.current_track.album.images ?? []
       imgs.sort((a, b) => (b.width ?? 0) - (a.width ?? 0))
       return imgs[0]?.url ?? ''
     })
 
+    const spotifyApi = new SpotifyWebApi()
+    spotifyApi.setAccessToken(OAUTH_TOKEN)
     const handlePlayButton = () => {
-      const spotifyApi = new SpotifyWebApi()
-      spotifyApi.setAccessToken(OAUTH_TOKEN)
-
       const paused = toRefs(props).state.value?.paused
       if (paused) {
         spotifyApi.play()
@@ -134,13 +186,28 @@ export default defineComponent({
       }
     }
 
+    const { prePosition } = useDjController(
+      spotifyApi,
+      realtimePosition,
+      handlePlayButton
+    )
+    const isSeeking = computed(() => prePosition.value !== -1)
+    const progressPosition = computed(() =>
+      prePosition.value === -1 ? realtimePosition.value : prePosition.value
+    )
+    const positionStr = computed(() => formatTimeStr(progressPosition.value))
+    const durationStr = computed(() =>
+      formatTimeStr(props.state?.duration ?? 0)
+    )
+
     return {
       ...toRefs(props),
       faHeart,
       faStepForward,
       faPlayCircle,
       faPauseCircle,
-      realtimePosition,
+      isSeeking,
+      progressPosition,
       positionStr,
       durationStr,
       albumImg,
