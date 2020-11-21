@@ -1,10 +1,12 @@
 <template>
-  <div class="flex flex-row p-4">
+  <div class="flex flex-row p-4 space-x-4">
     <div class="max-w-lg w-2/3 flex-shrink-0">
       <player :state="playbackState" :deviceId="deviceId" />
       <shortcut-list class="mt-4" />
     </div>
-    <div class="flex-1">曲リスト</div>
+    <div class="flex-1">
+      <search-input />
+    </div>
   </div>
 </template>
 
@@ -15,11 +17,13 @@ import { useSpotifyWebPlaybackSdk } from '../hooks/useSpotifyWebPlaybackSdk'
 import { OAUTH_TOKEN } from '../utils/env'
 import Player from '../components/Player.vue'
 import ShortcutList from '../components/ShortcutList.vue'
+import SearchInput from '../components/SearchInput.vue'
 
 export default defineComponent({
   components: {
     Player,
     ShortcutList,
+    SearchInput,
   },
   setup() {
     const playbackState = ref<Spotify.PlaybackState>()
