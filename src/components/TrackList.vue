@@ -5,6 +5,7 @@
       :key="t.id"
       class="flex flex-row items-center text-left w-full space-x-2 hover:bg-gray-700"
       :class="idx === selectedIdx && 'bg-gray-600'"
+      @click="handlePlayByClick(t.uri)"
     >
       <img
         :src="t.album.images[0].url"

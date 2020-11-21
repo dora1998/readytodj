@@ -91,13 +91,11 @@ export default defineComponent({
     const handleRemoveShortcut = (idx: number) => {
       const newArr = [...shortcuts.value]
       newArr[idx] = undefined
-      console.log('remove', newArr)
       shortcuts.value = newArr
     }
     const handleAddShortcut = (idx: number) => {
       const newArr = [...shortcuts.value]
       newArr[idx] = searchQuery.value
-      console.log('add', newArr)
       shortcuts.value = newArr
     }
     const handleCallShortcut = (idx: number) => {
