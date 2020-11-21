@@ -5,7 +5,8 @@
       <shortcut-list class="mt-4" />
     </div>
     <div class="flex-1">
-      <search-input />
+      <search-input :onSearch="handleSearch" />
+      <track-list class="mt-4" :tracks="searchResult" :deviceId="deviceId" />
     </div>
   </div>
 </template>
@@ -18,15 +19,21 @@ import { OAUTH_TOKEN } from '../utils/env'
 import Player from '../components/Player.vue'
 import ShortcutList from '../components/ShortcutList.vue'
 import SearchInput from '../components/SearchInput.vue'
+import TrackList from '../components/TrackList.vue'
+
+const spotifyApi = new SpotifyWebApi()
+spotifyApi.setAccessToken(OAUTH_TOKEN)
 
 export default defineComponent({
   components: {
     Player,
     ShortcutList,
     SearchInput,
+    TrackList,
   },
   setup() {
     const playbackState = ref<Spotify.PlaybackState>()
+    const searchResult = ref<SpotifyApi.TrackObjectFull[]>([])
     const { player, deviceId, isReady } = useSpotifyWebPlaybackSdk({
       name: 'ReadyToDJ',
       getOAuthToken: async () => OAUTH_TOKEN,
@@ -35,16 +42,18 @@ export default defineComponent({
         console.log(state)
       },
       onReady: (deviceId) => {
-        const spotifyApi = new SpotifyWebApi()
-        spotifyApi.setAccessToken(OAUTH_TOKEN)
         spotifyApi.play({
           device_id: deviceId,
-          uris: ['spotify:track:2Wgy7nY7GPUIEyP8nDyFeI'],
+          uris: ['spotify:track:3SAgoXsKEGMlIGNtOvs0vV'],
         })
       },
       accountError: () => console.error('accountError!'),
     })
-    return { playbackState, deviceId }
+    const handleSearch = async (text: string) => {
+      const res = await spotifyApi.searchTracks(text)
+      searchResult.value = res.tracks.items
+    }
+    return { playbackState, searchResult, deviceId, handleSearch }
   },
 })
 </script>

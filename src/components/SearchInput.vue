@@ -5,6 +5,8 @@
       type="search"
       name="search"
       placeholder="Search"
+      v-model="text"
+      @blur="handleBlur"
     />
     <button type="submit" class="absolute right-0 top-0 mt-4 mr-4">
       <font-awesome-icon
@@ -16,7 +18,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, ref, PropType } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
 
@@ -24,8 +26,18 @@ export default defineComponent({
   components: {
     FontAwesomeIcon,
   },
-  setup() {
-    return { faSearch }
+  props: {
+    onSearch: {
+      type: Function as PropType<(text: string) => void>,
+      required: true,
+    },
+  },
+  setup(props) {
+    const text = ref('')
+    const handleBlur = () => {
+      props.onSearch(text.value)
+    }
+    return { text, faSearch, handleBlur }
   },
 })
 </script>
