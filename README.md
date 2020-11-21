@@ -32,9 +32,11 @@ yarn dev
 
 4. Enjoy🎧
 
+⚠️ To play music from DDJ-400, you have to play by clicking button once because of the limitation by web browser.
+
 ## How to use
 
-![](./images/readytodj_how-to-use.png)
+![](./images/how_to_use.png)
 
 - Product image is imported from [this page](https://www.pioneerdj.com/ja-jp/product/controller/ddj-400/black/overview/).
 
